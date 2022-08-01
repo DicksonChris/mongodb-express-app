@@ -35,6 +35,33 @@ app.use(logger('dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
+
+// authentication middleware
+function auth(req, res, next) {
+  console.log(req.headers)
+  const authHeader = req.headers.authorization
+  if (!authHeader) {
+    const error = new Error('You are not authenticated')
+    res.setHeader('WWW-Authenticate', 'Basic')
+    error.status = 401
+    return next(error)
+  }
+
+  const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+  const user = auth[0]
+  const password = auth[1]
+  if (user === 'admin' && password === 'password') {
+    return next()
+  } else {
+    const error = new Error('You are not authenticated')
+    res.setHeader('WWW-Authenticate', 'Basic')
+    error.status = 401
+    return next(error)
+  }
+}
+
+app.use(auth)
+
 app.use(express.static(path.join(__dirname, 'public')))
 
 app.use('/', indexRouter)
